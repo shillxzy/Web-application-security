@@ -1,0 +1,39 @@
+### 1. GET all books
+GET http://localhost:8080/api/v1/books
+Authorization: Basic admin admin
+Accept: application/json
+
+### 2. GET one book
+GET http://localhost:8080/api/v1/books/2
+Authorization: Basic admin admin
+Accept: application/json
+
+### 3. CREATE one book
+POST http://localhost:8080/api/v1/books
+Authorization: Basic admin admin
+Content-Type: application/json
+
+{
+  "title": "The Pragmatic Programmer",
+  "author": "Andrew Hunt, David Thomas",
+  "publishedYear": 1999
+}
+
+### 4. UPDATE one book
+PUT http://localhost:8080/api/v1/books
+Authorization: Basic admin admin
+Content-Type: application/json
+
+{
+  "id": 1,
+  "title": "Kobzar (updated)",
+  "author": "Taras Shevchenko",
+  "publishedYear": 1840
+}
+
+### 5. DELETE one book
+DELETE http://localhost:8080/api/v1/books/3
+Authorization: Basic admin admin
+Accept: application/json
+
+###
