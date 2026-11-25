@@ -21,25 +21,25 @@ public class BookController {
         return bookService.getAllBooks();
     }
 
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasAnyAuthority('USER', 'ADMIN', 'SUPERADMIN')")
     @GetMapping("/{id}")
     public Book getBook(@PathVariable Long id) {
         return bookService.getBook(id);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'SUPERADMIN')")
     @PostMapping
     public Book createBook(@RequestBody Book book) {
         return bookService.createBook(book);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'SUPERADMIN')")
     @PutMapping
     public Book updateBook(@RequestBody Book book) {
         return bookService.updateBook(book);
     }
 
-    @PreAuthorize("hasRole('SUPERADMIN')")
+    @PreAuthorize("hasAuthority('SUPERADMIN')")
     @DeleteMapping("/{id}")
     public void deleteBook(@PathVariable Long id) {
         bookService.deleteBook(id);

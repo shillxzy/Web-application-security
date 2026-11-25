@@ -1,0 +1,101 @@
+# Login requests: each one returns a JWT and saves it under its @name.
+# The access requests below refer to them with @ref, so httpyac logs in
+# automatically and puts the token into "Authorization: Bearer ...".
+
+### Login as USER
+# @name userLogin
+POST http://localhost:8080/api/v1/auth/authenticate
+Content-Type: application/json
+
+{
+  "email": "user@books.com",
+  "password": "user"
+}
+
+### Login as ADMIN
+# @name adminLogin
+POST http://localhost:8080/api/v1/auth/authenticate
+Content-Type: application/json
+
+{
+  "email": "admin@books.com",
+  "password": "admin"
+}
+
+### Login as SUPERADMIN
+# @name superadminLogin
+POST http://localhost:8080/api/v1/auth/authenticate
+Content-Type: application/json
+
+{
+  "email": "superadmin@books.com",
+  "password": "superadmin"
+}
+
+### 1. USER reads all books -> 200
+# @ref userLogin
+GET http://localhost:8080/api/v1/books
+Authorization: Bearer {{userLogin.token}}
+
+### 2. USER tries to create a book -> 403 Forbidden
+# @ref userLogin
+POST http://localhost:8080/api/v1/books
+Authorization: Bearer {{userLogin.token}}
+Content-Type: application/json
+
+{
+  "title": "Should not be saved",
+  "author": "Nobody",
+  "publishedYear": 2000
+}
+
+### 3. ADMIN creates a book -> 200
+# @ref adminLogin
+POST http://localhost:8080/api/v1/books
+Authorization: Bearer {{adminLogin.token}}
+Content-Type: application/json
+
+{
+  "title": "The Pragmatic Programmer",
+  "author": "Andrew Hunt, David Thomas",
+  "publishedYear": 1999
+}
+
+### 4. ADMIN tries to delete a book -> 403 Forbidden
+# @ref adminLogin
+DELETE http://localhost:8080/api/v1/books/2
+Authorization: Bearer {{adminLogin.token}}
+
+### 5. SUPERADMIN deletes a book -> 200
+# @ref superadminLogin
+DELETE http://localhost:8080/api/v1/books/3
+Authorization: Bearer {{superadminLogin.token}}
+
+### 6. ADMIN opens admin-only route -> 200
+# @ref adminLogin
+GET http://localhost:8080/api/v1/hello/admin
+Authorization: Bearer {{adminLogin.token}}
+
+### 7. USER tries admin-only route -> 403 Forbidden
+# @ref userLogin
+GET http://localhost:8080/api/v1/hello/admin
+Authorization: Bearer {{userLogin.token}}
+
+### 8. SUPERADMIN opens admin/superadmin route -> 200
+# @ref superadminLogin
+GET http://localhost:8080/api/v1/hello/man
+Authorization: Bearer {{superadminLogin.token}}
+
+### 9. USER opens user-only route -> 200
+# @ref userLogin
+GET http://localhost:8080/api/v1/hello/user
+Authorization: Bearer {{userLogin.token}}
+
+### 10. No token -> 401 Unauthorized
+GET http://localhost:8080/api/v1/books
+
+### 11. Fake token -> 401 Unauthorized
+GET http://localhost:8080/api/v1/books
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.fake.token
+
+###

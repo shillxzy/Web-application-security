@@ -14,7 +14,6 @@ import org.springframework.web.context.WebApplicationContext;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -55,17 +54,37 @@ public class AccessTests {
     }
 
     @Test
-    void whenWrongPasswordThenUnauthorized() throws Exception {
-        ResultActions result = mockMvc.perform(get("/api/v1/books")
-                .with(httpBasic("user@books.com", "wrongpass")));
+    void whenWrongPasswordThenNoToken() throws Exception {
+        ResultActions result = mockMvc.perform(post("/api/v1/auth/authenticate")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"email": "user@books.com", "password": "wrongpass"}
+                        """));
 
         assertEquals(401, result.andReturn().getResponse().getStatus());
     }
 
     @Test
-    void whenRealUserCredentialsThenOk() throws Exception {
+    void whenFakeTokenThenUnauthorized() throws Exception {
         ResultActions result = mockMvc.perform(get("/api/v1/books")
-                .with(httpBasic("user@books.com", "user")));
+                .header("Authorization", "Bearer not.a.real.token"));
+
+        assertEquals(401, result.andReturn().getResponse().getStatus());
+    }
+
+    @Test
+    void whenRealTokenThenOk() throws Exception {
+        // log in, take the token from the response, use it as Bearer
+        String body = mockMvc.perform(post("/api/v1/auth/authenticate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email": "user@books.com", "password": "user"}
+                                """))
+                .andReturn().getResponse().getContentAsString();
+        String token = body.replaceAll(".*\"token\":\"([^\"]+)\".*", "$1");
+
+        ResultActions result = mockMvc.perform(get("/api/v1/books")
+                .header("Authorization", "Bearer " + token));
 
         assertEquals(200, result.andReturn().getResponse().getStatus());
     }
@@ -73,7 +92,7 @@ public class AccessTests {
     // ---------- books: read ----------
 
     @Test
-    @WithMockUser(username = "user", roles = {"USER"})
+    @WithMockUser(username = "user", authorities = {"USER"})
     void whenUserGetsAllBooksThenOk() throws Exception {
         ResultActions result = mockMvc.perform(get("/api/v1/books"));
 
@@ -84,7 +103,7 @@ public class AccessTests {
     }
 
     @Test
-    @WithMockUser(username = "superadmin", roles = {"SUPERADMIN"})
+    @WithMockUser(username = "superadmin", authorities = {"SUPERADMIN"})
     void whenSuperadminGetsOneBookThenOk() throws Exception {
         ResultActions result = mockMvc.perform(get("/api/v1/books/2"));
 
@@ -97,7 +116,7 @@ public class AccessTests {
     // ---------- books: create / update ----------
 
     @Test
-    @WithMockUser(username = "user", roles = {"USER"})
+    @WithMockUser(username = "user", authorities = {"USER"})
     void whenUserCreatesBookThenForbidden() throws Exception {
         ResultActions result = mockMvc.perform(post("/api/v1/books")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -110,7 +129,7 @@ public class AccessTests {
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @WithMockUser(username = "admin", authorities = {"ADMIN"})
     void whenAdminCreatesBookThenOkAndAudited() throws Exception {
         ResultActions result = mockMvc.perform(post("/api/v1/books")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -123,7 +142,7 @@ public class AccessTests {
     }
 
     @Test
-    @WithMockUser(username = "superadmin", roles = {"SUPERADMIN"})
+    @WithMockUser(username = "superadmin", authorities = {"SUPERADMIN"})
     void whenSuperadminUpdatesBookThenOk() throws Exception {
         ResultActions result = mockMvc.perform(put("/api/v1/books")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -138,7 +157,7 @@ public class AccessTests {
     }
 
     @Test
-    @WithMockUser(username = "user", roles = {"USER"})
+    @WithMockUser(username = "user", authorities = {"USER"})
     void whenUserUpdatesBookThenForbidden() throws Exception {
         ResultActions result = mockMvc.perform(put("/api/v1/books")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -152,7 +171,7 @@ public class AccessTests {
     // ---------- books: delete ----------
 
     @Test
-    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @WithMockUser(username = "admin", authorities = {"ADMIN"})
     void whenAdminDeletesBookThenForbidden() throws Exception {
         ResultActions result = mockMvc.perform(delete("/api/v1/books/2"));
 
@@ -163,7 +182,7 @@ public class AccessTests {
     }
 
     @Test
-    @WithMockUser(username = "superadmin", roles = {"SUPERADMIN"})
+    @WithMockUser(username = "superadmin", authorities = {"SUPERADMIN"})
     void whenSuperadminDeletesBookThenOk() throws Exception {
         ResultActions result = mockMvc.perform(delete("/api/v1/books/3"));
 
@@ -173,7 +192,7 @@ public class AccessTests {
     // ---------- hello routes ----------
 
     @Test
-    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @WithMockUser(username = "admin", authorities = {"ADMIN"})
     void whenAdminGetsHelloAdminThenOk() throws Exception {
         ResultActions result = mockMvc.perform(get("/api/v1/hello/admin"));
 
@@ -184,7 +203,7 @@ public class AccessTests {
     }
 
     @Test
-    @WithMockUser(username = "user", roles = {"USER"})
+    @WithMockUser(username = "user", authorities = {"USER"})
     void whenUserGetsHelloAdminThenForbidden() throws Exception {
         ResultActions result = mockMvc.perform(get("/api/v1/hello/admin"));
 
@@ -192,7 +211,7 @@ public class AccessTests {
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @WithMockUser(username = "admin", authorities = {"ADMIN"})
     void whenAdminGetsHelloUserThenForbidden() throws Exception {
         ResultActions result = mockMvc.perform(get("/api/v1/hello/user"));
 
@@ -203,7 +222,7 @@ public class AccessTests {
     }
 
     @Test
-    @WithMockUser(username = "user", roles = {"USER"})
+    @WithMockUser(username = "user", authorities = {"USER"})
     void whenUserGetsHelloUserThenOk() throws Exception {
         ResultActions result = mockMvc.perform(get("/api/v1/hello/user"));
 
@@ -214,7 +233,7 @@ public class AccessTests {
     }
 
     @Test
-    @WithMockUser(username = "superadmin", roles = {"SUPERADMIN"})
+    @WithMockUser(username = "superadmin", authorities = {"SUPERADMIN"})
     void whenSuperadminGetsHelloManThenOk() throws Exception {
         ResultActions result = mockMvc.perform(get("/api/v1/hello/man"));
 
@@ -225,7 +244,7 @@ public class AccessTests {
     }
 
     @Test
-    @WithMockUser(username = "user", roles = {"USER"})
+    @WithMockUser(username = "user", authorities = {"USER"})
     void whenUserGetsHelloManThenForbidden() throws Exception {
         ResultActions result = mockMvc.perform(get("/api/v1/hello/man"));
 
@@ -233,7 +252,7 @@ public class AccessTests {
     }
 
     @Test
-    @WithMockUser(username = "user", roles = {"USER"})
+    @WithMockUser(username = "user", authorities = {"USER"})
     void whenUserGetsRouteWithoutAnnotationThenOk() throws Exception {
         ResultActions result = mockMvc.perform(get("/api/v1/hello/unknown"));
 

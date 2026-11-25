@@ -57,11 +57,11 @@ public class User implements UserDetails, Principal {
         return email;
     }
 
-    // "ROLE_" prefix so that hasRole('ADMIN') in @PreAuthorize keeps working
+    // authorities without the "ROLE_" prefix, checked with hasAuthority('ADMIN') in @PreAuthorize
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return roles.stream()
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.name()))
+                .map(role -> new SimpleGrantedAuthority(role.name()))
                 .toList();
     }
 

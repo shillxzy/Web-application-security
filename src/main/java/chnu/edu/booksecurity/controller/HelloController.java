@@ -9,19 +9,19 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/hello")
 public class HelloController {
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     @GetMapping("/admin")
     public String helloAdmin() {
         return "Hello, admin!";
     }
 
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAuthority('USER')")
     @GetMapping("/user")
     public String helloUser() {
         return "Hello, user!";
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'SUPERADMIN')")
     @GetMapping("/man")
     public String helloMan() {
         return "Hello, man!";
