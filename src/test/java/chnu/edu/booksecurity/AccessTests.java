@@ -57,7 +57,7 @@ public class AccessTests {
     @Test
     void whenWrongPasswordThenUnauthorized() throws Exception {
         ResultActions result = mockMvc.perform(get("/api/v1/books")
-                .with(httpBasic("user", "wrongpass")));
+                .with(httpBasic("user@books.com", "wrongpass")));
 
         assertEquals(401, result.andReturn().getResponse().getStatus());
     }
@@ -65,7 +65,7 @@ public class AccessTests {
     @Test
     void whenRealUserCredentialsThenOk() throws Exception {
         ResultActions result = mockMvc.perform(get("/api/v1/books")
-                .with(httpBasic("user", "user")));
+                .with(httpBasic("user@books.com", "user")));
 
         assertEquals(200, result.andReturn().getResponse().getStatus());
     }
